@@ -160,7 +160,7 @@ func Execute() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", false, "Allow third-party public IP discovery (discloses source IP)")
+	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", true, "Allow HTTPS ipify lookup for missing IPs (IPv6 prefers local NIC; discloses source IP)")
 	RootCmd.PersistentFlags().StringVarP(&flags.Token, "token", "t", "", "API token")
 	//RootCmd.MarkPersistentFlagRequired("token")
 	RootCmd.PersistentFlags().StringVarP(&flags.Endpoint, "endpoint", "e", "", "API endpoint")
@@ -221,8 +221,8 @@ func loadFromEnv() {
 		case reflect.String:
 			field.SetString(envValue)
 		case reflect.Bool:
-			if strings.ToLower(envValue) == "true" || envValue == "1" {
-				field.SetBool(true)
+			if boolVal, err := strconv.ParseBool(strings.ToLower(envValue)); err == nil {
+				field.SetBool(boolVal)
 			}
 		case reflect.Int:
 			if intVal, err := strconv.Atoi(envValue); err == nil {

@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"net"
 	"net/http"
 	"testing"
 )
@@ -15,7 +16,9 @@ func (r rejectIPLookup) RoundTrip(*http.Request) (*http.Response, error) {
 func TestPrivateIPDiscoveryDoesNotContactThirdParties(t *testing.T) {
 	saved := *flags
 	old4, old6 := ipv4HTTPClient, ipv6HTTPClient
-	t.Cleanup(func() { *flags = saved; ipv4HTTPClient, ipv6HTTPClient = old4, old6 })
+	oldList := listIPInterfaces
+	listIPInterfaces = func() ([]net.Interface, error) { return nil, nil }
+	t.Cleanup(func() { *flags = saved; ipv4HTTPClient, ipv6HTTPClient = old4, old6; listIPInterfaces = oldList })
 	ipv4HTTPClient = &http.Client{Transport: rejectIPLookup{t}}
 	ipv6HTTPClient = &http.Client{Transport: rejectIPLookup{t}}
 	flags.AllowExternalIPLookup = false

@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing release tag to package
         required: true
-        default: '1.5.2'
+        default: '1.5.3'
         type: string
 
 permissions:
@@ -30,11 +30,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - name: Test IP discovery and configuration
+        run: go test ./monitoring/unit ./cmd/... ./update
 
       - name: Build static binaries for multi-arch
         env:
