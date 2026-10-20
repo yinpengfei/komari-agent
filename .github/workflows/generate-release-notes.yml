@@ -34,6 +34,12 @@ jobs:
               ? context.payload.release
               : (await github.rest.repos.getReleaseByTag({ owner, repo, tag })).data;
 
+            // Keep authored upgrade and privacy instructions intact.
+            if (release.body?.trim()) {
+              core.info(`Preserving existing release notes for ${tag}.`);
+              return;
+            }
+
             const generated = await github.request(
               "POST /repos/{owner}/{repo}/releases/generate-notes",
               {
