@@ -1,6 +1,10 @@
 维护分支： https://github.com/yinpengfei/komari-agent/tree/maint/1.5.1
 
-隐私变更和安装前提见 [PRIVACY.md](PRIVACY.md)。本分支默认不请求第三方 IP 探测服务。
+当前正式版本：**1.5.2**（14 个平台安装包与 Docker 镜像已发布）。
+
+**[安装、升级与维护指南](https://github.com/yinpengfei/komari/blob/maint/1.5.1/INSTALL_MAINTENANCE.md#agent-安装)** · [1.5.2 下载](https://github.com/yinpengfei/komari-agent/releases/tag/1.5.2) · [隐私与更新行为](PRIVACY.md)
+
+默认分支保持 main；请从本维护分支查看维护版文档。本分支默认不请求第三方 IP 探测服务。
 
 # komari-agent
 
@@ -64,6 +68,7 @@ export AGENT_TOKEN="your-token"
 | `enable_gpu` | `AGENT_ENABLE_GPU` | `--gpu` | 启用详细 GPU 监控 | `1.0.80` |
 | `disable_compression` | `AGENT_DISABLE_COMPRESSION` | `--disable-compression` | 禁用 v2 传输压缩 | `1.2.10` |
 | `prefer_ip_version` | `AGENT_PREFER_IP_VERSION` | `--prefer-ip-version` | 优先使用 IP 版本，可选 `4` 或 `6` | 未发布 |
+| `allow_external_ip_lookup` | `AGENT_ALLOW_EXTERNAL_IP_LOOKUP` | `--allow-external-ip-lookup` | 主动允许第三方 HTTPS ipify 公网 IP 查询；默认关闭 | 本 Fork 1.5.2 |
 
 完整参数可运行：
 
@@ -71,4 +76,4 @@ export AGENT_TOKEN="your-token"
 ./komari-agent --help
 ```
 
-详见 `cmd/flags/flags.go` 及 `cmd/root.go`
+详见 `cmd/flags/flag.go` 及 `cmd/root.go`
