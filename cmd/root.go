@@ -160,6 +160,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", false, "Allow third-party public IP discovery (discloses source IP)")
 	RootCmd.PersistentFlags().StringVarP(&flags.Token, "token", "t", "", "API token")
 	//RootCmd.MarkPersistentFlagRequired("token")
 	RootCmd.PersistentFlags().StringVarP(&flags.Endpoint, "endpoint", "e", "", "API endpoint")

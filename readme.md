@@ -1,3 +1,7 @@
+维护分支： https://github.com/yinpengfei/komari-agent/tree/maint/1.5.1
+
+隐私变更和安装前提见 [PRIVACY.md](PRIVACY.md)。本分支默认不请求第三方 IP 探测服务。
+
 # komari-agent
 
 ## 配置方式

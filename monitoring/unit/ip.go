@@ -48,12 +48,6 @@ var (
 func GetIPv4Address() (string, error) {
 
 	webAPIs := []string{
-		"https://www.visa.cn/cdn-cgi/trace",
-		"https://www.qualcomm.cn/cdn-cgi/trace",
-		"https://www.toutiao.com/stream/widget/local_weather/data/",
-		"https://edge-ip.html.zone/geo",
-		"https://vercel-ip.html.zone/geo",
-		"http://ipv4.ip.sb",
 		"https://api.ipify.org?format=json",
 	}
 
@@ -86,10 +80,7 @@ func GetIPv4Address() (string, error) {
 func GetIPv6Address() (string, error) {
 
 	webAPIs := []string{
-		"https://v6.ip.zxinc.org/info.php?type=json",
 		"https://api6.ipify.org?format=json",
-		"https://ipv6.icanhazip.com",
-		"http://api-ipv6.ip.sb/geoip",
 	}
 
 	for _, api := range webAPIs {
@@ -133,6 +124,10 @@ func GetIPAddress() (ipv4, ipv6 string, err error) {
 				return ipv4, ipv6, nil
 			}
 		}
+	}
+
+	if !flags.AllowExternalIPLookup {
+		return flags.CustomIpv4, flags.CustomIpv6, nil
 	}
 
 	if flags.CustomIpv4 != "" {

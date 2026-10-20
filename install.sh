@@ -322,7 +322,7 @@ log_info "Detected OS: ${GREEN}$os_name${NC}, Architecture: ${GREEN}$arch${NC}"
 file_name="komari-agent-${os_name}-${arch}"
 
 resolve_snapshot_version() {
-    snapshot_api_url="https://api.github.com/repos/komari-monitor/komari-agent/releases?per_page=100"
+    snapshot_api_url="https://api.github.com/repos/yinpengfei/komari-agent/releases?per_page=100"
     if [ -n "$github_proxy" ]; then
         snapshot_api_urls="${github_proxy}/${snapshot_api_url} ${snapshot_api_url}"
     else
@@ -383,10 +383,10 @@ fi
 
 if [ -n "$github_proxy" ]; then
     # Use proxy for GitHub releases
-    download_url="${github_proxy}/https://github.com/komari-monitor/komari-agent/releases/${download_path}/${file_name}"
+    download_url="${github_proxy}/https://github.com/yinpengfei/komari-agent/releases/${download_path}/${file_name}"
 else
     # Direct access to GitHub releases
-    download_url="https://github.com/komari-monitor/komari-agent/releases/${download_path}/${file_name}"
+    download_url="https://github.com/yinpengfei/komari-agent/releases/${download_path}/${file_name}"
 fi
 
 log_step "Creating installation directory: ${GREEN}$target_dir${NC}"
@@ -395,18 +395,8 @@ if [ "$EUID" -eq 0 ] && [ "$service_user" != "root" ]; then
     chown "$service_user" "$target_dir"
 fi
 
-# Download with automatic mirror fallback.
-# 直连失败自动依次尝试常见 GitHub 加速镜像, 可用 --install-no-mirror 关闭.
-if [ -n "$github_proxy" ] || [ "$install_no_mirror" = "true" ]; then
-    download_urls="$download_url"
-else
-    download_urls="
-${download_url}
-https://ghfast.top/${download_url}
-https://gh-proxy.com/${download_url}
-https://ghproxy.net/${download_url}
-"
-fi
+# Use only the direct URL or the administrator's explicitly selected proxy.
+download_urls="$download_url"
 
 dl_ok=""
 for u in $download_urls; do
