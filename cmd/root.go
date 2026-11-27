@@ -160,7 +160,9 @@ func Execute() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", true, "Allow HTTPS ipify lookup for missing IPs (IPv6 prefers local NIC; discloses source IP)")
+	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", true, "Query configured IP services for missing addresses; IPv6 prefers local NIC")
+	RootCmd.PersistentFlags().StringVar(&flags.IPv4LookupURL, "ipv4-lookup-url", monitoring.DefaultIPv4LookupURL, "Your IPv4 source-IP API URL (HTTPS; JSON ip field or plain IP)")
+	RootCmd.PersistentFlags().StringVar(&flags.IPv6LookupURL, "ipv6-lookup-url", monitoring.DefaultIPv6LookupURL, "Your IPv6 source-IP API URL (HTTPS; JSON ip field or plain IP)")
 	RootCmd.PersistentFlags().StringVarP(&flags.Token, "token", "t", "", "API token")
 	//RootCmd.MarkPersistentFlagRequired("token")
 	RootCmd.PersistentFlags().StringVarP(&flags.Endpoint, "endpoint", "e", "", "API endpoint")

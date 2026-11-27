@@ -20,15 +20,15 @@ func TestIPDiscovery(t *testing.T) {
 		external, legacy, fail, scanFail           bool
 		calls4, calls6                             int
 	}{
-		{name: "NIC IPv6 avoids IPv6 lookup", nic6: "2603:c024::42", external: true, want4: "198.51.100.42", want6: "2603:c024::42", calls4: 1},
-		{name: "private IPv6 falls back", nic6: "fd00::42", external: true, want4: "198.51.100.42", want6: "2603:c024::99", calls4: 1, calls6: 1},
-		{name: "missing IPv6 falls back", external: true, want4: "198.51.100.42", want6: "2603:c024::99", calls4: 1, calls6: 1},
-		{name: "NIC enumeration failure falls back", external: true, scanFail: true, want4: "198.51.100.42", want6: "2603:c024::99", calls4: 1, calls6: 1},
+		{name: "NIC IPv6 avoids IPv6 lookup", nic6: "2603:c024::42", external: true, want4: "8.8.8.8", want6: "2603:c024::42", calls4: 1},
+		{name: "private IPv6 falls back", nic6: "fd00::42", external: true, want4: "8.8.8.8", want6: "2603:c024::99", calls4: 1, calls6: 1},
+		{name: "missing IPv6 falls back", external: true, want4: "8.8.8.8", want6: "2603:c024::99", calls4: 1, calls6: 1},
+		{name: "NIC enumeration failure falls back", external: true, scanFail: true, want4: "8.8.8.8", want6: "2603:c024::99", calls4: 1, calls6: 1},
 		{name: "disabled external still uses NIC IPv6", nic6: "2603:c024::42", want6: "2603:c024::42"},
 		{name: "disabled external never queries", nic6: "fe80::42"},
 		{name: "custom addresses win over NIC mode", nic6: "2603:c024::42", custom4: "192.0.2.1", custom6: "2001:db8::1", legacy: true, external: true, want4: "192.0.2.1", want6: "2001:db8::1"},
 		{name: "custom IPv4 and automatic IPv6", custom4: "192.0.2.1", external: true, want4: "192.0.2.1", want6: "2603:c024::99", calls6: 1},
-		{name: "custom IPv6 and automatic IPv4", custom6: "2001:db8::1", external: true, want4: "198.51.100.42", want6: "2001:db8::1", calls4: 1},
+		{name: "custom IPv6 and automatic IPv4", custom6: "2001:db8::1", external: true, want4: "8.8.8.8", want6: "2001:db8::1", calls4: 1},
 		{name: "legacy keeps private NIC addresses", nic6: "fd00::42", legacy: true, external: true, want4: "10.0.0.42", want6: "fd00::42"},
 		{name: "legacy custom IPv4 wins", nic6: "fd00::42", custom4: "192.0.2.1", legacy: true, external: true, want4: "192.0.2.1", want6: "fd00::42"},
 		{name: "legacy retains early return for one family", legacy: true, external: true, want4: "10.0.0.42"},
@@ -46,6 +46,7 @@ func TestIPDiscovery(t *testing.T) {
 			flags.AllowExternalIPLookup, flags.GetIpAddrFromNic = tc.external, tc.legacy
 			flags.CustomIpv4, flags.CustomIpv6 = tc.custom4, tc.custom6
 			flags.IncludeNics, flags.ExcludeNics = "", ""
+			flags.IPv4LookupURL, flags.IPv6LookupURL = "", ""
 			listLegacyIPInterfaces = func() ([]string, error) { return []string{"eth0"}, nil }
 			listIPInterfaces = func() ([]net.Interface, error) {
 				if tc.scanFail {
@@ -64,7 +65,7 @@ func TestIPDiscovery(t *testing.T) {
 			client := func(host, ip string, calls *int) *http.Client {
 				return &http.Client{Transport: ipLookupTransport(func(r *http.Request) (*http.Response, error) {
 					*calls++
-					if r.Method != "GET" || r.URL.Scheme != "https" || r.URL.Host != host || r.URL.RawQuery != "format=json" || r.Body != nil || r.Header.Get("Authorization") != "" {
+					if r.Method != "GET" || r.URL.Scheme != "https" || r.URL.Host != host || r.URL.RawQuery != "" || r.URL.Path != "/ip" || r.Body != nil || r.Header.Get("Authorization") != "" {
 						t.Fatalf("unexpected lookup request: %v", r.URL)
 					}
 					if tc.fail {
@@ -73,8 +74,8 @@ func TestIPDiscovery(t *testing.T) {
 					return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"ip":"` + ip + `"}`))}, nil
 				})}
 			}
-			ipv4HTTPClient = client("api.ipify.org", "198.51.100.42", &calls4)
-			ipv6HTTPClient = client("api6.ipify.org", "2603:c024::99", &calls6)
+			ipv4HTTPClient = client("ipv4.yin.cc", "8.8.8.8", &calls4)
+			ipv6HTTPClient = client("ipv6.yin.cc", "2603:c024::99", &calls6)
 			v4, v6, err := GetIPAddress()
 			if err != nil || v4 != tc.want4 || v6 != tc.want6 || calls4 != tc.calls4 || calls6 != tc.calls6 {
 				t.Fatalf("got (%q, %q), calls (%d,%d), err %v; want (%q,%q), calls (%d,%d)", v4, v6, calls4, calls6, err, tc.want4, tc.want6, tc.calls4, tc.calls6)
@@ -140,7 +141,7 @@ func TestIPLookupRejectsInvalidResponse(t *testing.T) {
 		client := &http.Client{Transport: ipLookupTransport(func(*http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: tc.status, Body: io.NopCloser(strings.NewReader(tc.body))}, nil
 		})}
-		got, _ := queryPublicIP(client, "https://api.ipify.org?format=json", tc.ipv4)
+		got, _ := queryPublicIP(client, "https://ipv4.yin.cc?format=json", tc.ipv4)
 		if got != "" {
 			t.Errorf("accepted bad response %s: %s", tc.body, got)
 		}

@@ -1,3 +1,19 @@
+# Privacy and maintenance — 1.5.4 (2026-11-28)
+
+Maintenance release: [1.5.4](https://github.com/yinpengfei/komari-agent/releases/tag/1.5.4). [Installation guide](https://github.com/yinpengfei/komari/blob/maint/1.5.1/INSTALL_MAINTENANCE.md). Source and releases use maint/1.5.1; the default branch remains main. Agent and server versions are independent.
+
+- Missing IPv4 uses `https://ipv4.yin.cc/ip`. IPv6 prefers a local public-scope NIC candidate, then uses `https://ipv6.yin.cc/ip` only if missing. Both URLs are configurable. No built-in third-party fallback remains. Queries use the basic-info schedule (startup/reconnect and every five minutes by default), with each request limited to eight seconds and 4096 response bytes.
+- Custom IPs take priority. Original `allow_external_ip_lookup` CLI/env/JSON false values still disable all HTTP address discovery. Disabling queries still permits local NIC IPv6 selection. The explicit NIC mode retains its previous behavior, including private addresses and early return after finding either family.
+- Discovery carries fixed User-Agent `komari-agent-ip-discovery/1`, no panel token, cookies, hostname or hardware payload. A configured service observes the exit IP and request timing. Requests bypass HTTP_PROXY/HTTPS_PROXY, reject redirects, validate TLS normally, and reject private/special/wrong-family or conflicting response addresses. This may differ from the 1.5.3 proxy behavior; use a reachable direct service or specify IPs manually.
+- Local NIC scope filtering does not verify Internet connectivity or identify a NAT66 egress. Interface include/exclude filters and deterministic selection remain unchanged.
+- Metrics, hardware/OS, IPs and requested remote-control results still go to the configured panel. No server protocol change is needed for this update. Remote control remains governed by the existing disable-web-ssh setting.
+- Existing automatic updates remain enabled: startup/every six hours within the current major.minor line. 1.5.* agents may install 1.5.4. Keep an exact version by disabling automatic updates. Docker requires pulling/recreating the image; its binary self-update remains disabled. Older 1.5.3 assets/tags remain available.
+- Installation and updates use this fork's GitHub releases; Windows may download NSSM as before. Custom DNS fallback behavior is unchanged. These external requests are separate from IP discovery.
+
+Configuration precedence remains defaults < CLI < environment < JSON. Consult the readme for custom URL flags and supported response shapes.
+
+## Published 1.5.3 behavior (historical)
+
 # Privacy and maintenance
 
 Maintenance version **1.5.3** (2026-10-21): see its [Release](https://github.com/yinpengfei/komari-agent/releases/tag/1.5.3) for 14 platform binaries and amd64/arm64 images. [Installation and maintenance guide](https://github.com/yinpengfei/komari/blob/maint/1.5.1/INSTALL_MAINTENANCE.md). Default branch remains main; current maintenance docs live on maint/1.5.1.

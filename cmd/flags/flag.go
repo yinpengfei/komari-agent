@@ -1,6 +1,8 @@
 package flags_pkg
 
 type Config struct {
+	IPv4LookupURL         string  `json:"ipv4_lookup_url" env:"AGENT_IPV4_LOOKUP_URL"`
+	IPv6LookupURL         string  `json:"ipv6_lookup_url" env:"AGENT_IPV6_LOOKUP_URL"`
 	AllowExternalIPLookup bool    `json:"allow_external_ip_lookup" env:"AGENT_ALLOW_EXTERNAL_IP_LOOKUP"`
 	AutoDiscoveryKey      string  `json:"auto_discovery_key" env:"AGENT_AUTO_DISCOVERY_KEY"`         // 自动发现密钥
 	DisableAutoUpdate     bool    `json:"disable_auto_update" env:"AGENT_DISABLE_AUTO_UPDATE"`       // 禁用自动更新

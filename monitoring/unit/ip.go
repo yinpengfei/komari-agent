@@ -2,13 +2,12 @@ package monitoring
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/netip"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/komari-monitor/komari-agent/dnsresolver"
@@ -19,7 +18,8 @@ var (
 	ipv4HTTPClient = &http.Client{
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			// Source-IP discovery must not report an HTTP_PROXY egress.
+			Proxy: nil,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				dialer := dnsresolver.GetNetDialer(15 * time.Second)
 				return dialer.DialContext(ctx, "tcp4", addr) // 锁v4防止出现问题
@@ -34,7 +34,7 @@ var (
 	ipv6HTTPClient = &http.Client{
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: nil,
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				dialer := dnsresolver.GetNetDialer(15 * time.Second)
 				return dialer.DialContext(ctx, "tcp6", addr) // 锁v6防止出现问题
@@ -46,45 +46,25 @@ var (
 		},
 		Timeout: 15 * time.Second,
 	}
-	userAgent              = "curl/8.0.1"
 	listIPInterfaces       = net.Interfaces
 	listLegacyIPInterfaces = InterfaceList
 	interfaceIPAddrs       = func(iface net.Interface) ([]net.Addr, error) { return iface.Addrs() }
 )
 
 func GetIPv4Address() (string, error) {
-	return queryPublicIP(ipv4HTTPClient, "https://api.ipify.org?format=json", true)
+	endpoint := flags.IPv4LookupURL
+	if endpoint == "" {
+		endpoint = DefaultIPv4LookupURL
+	}
+	return queryPublicIP(ipv4HTTPClient, endpoint, true)
 }
 
 func GetIPv6Address() (string, error) {
-	return queryPublicIP(ipv6HTTPClient, "https://api6.ipify.org?format=json", false)
-}
-
-func queryPublicIP(client *http.Client, url string, ipv4 bool) (string, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
+	endpoint := flags.IPv6LookupURL
+	if endpoint == "" {
+		endpoint = DefaultIPv6LookupURL
 	}
-	req.Header.Set("User-Agent", userAgent)
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", nil
-	}
-	var result struct {
-		IP string `json:"ip"`
-	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&result); err != nil {
-		return "", err
-	}
-	ip, err := netip.ParseAddr(result.IP)
-	if err != nil || ip.Zone() != "" || ip.Is4In6() || ip.Is4() != ipv4 || !ip.IsGlobalUnicast() || ip.IsPrivate() {
-		return "", nil
-	}
-	return ip.String(), nil
+	return queryPublicIP(ipv6HTTPClient, endpoint, false)
 }
 
 func GetIPAddress() (ipv4, ipv6 string, err error) {
@@ -116,21 +96,30 @@ func GetIPAddress() (ipv4, ipv6 string, err error) {
 	if !flags.AllowExternalIPLookup {
 		return ipv4, ipv6, nil
 	}
-
+	var wg sync.WaitGroup
 	if ipv4 == "" {
-		ipv4, err = GetIPv4Address()
-		if err != nil {
-			log.Printf("Get IPV4 Error: %v", err)
-			ipv4 = ""
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var e error
+			ipv4, e = GetIPv4Address()
+			if e != nil {
+				log.Printf("Get IPv4 from configured service failed: %v", e)
+			}
+		}()
 	}
 	if ipv6 == "" {
-		ipv6, err = GetIPv6Address()
-		if err != nil {
-			log.Printf("Get IPV6 Error: %v", err)
-			ipv6 = ""
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var e error
+			ipv6, e = GetIPv6Address()
+			if e != nil {
+				log.Printf("Get IPv6 from configured service failed: %v", e)
+			}
+		}()
 	}
+	wg.Wait()
 
 	return ipv4, ipv6, nil
 }

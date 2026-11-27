@@ -1,23 +1,25 @@
 # Workflow Design Notes
 
-## Maintenance branch behavior (1.5.3)
+## Maintenance branch behavior (1.5.4)
 
 The sections below include upstream design history. On `maint/1.5.1`, the
 default branch remains `main`; publish stable releases from the maintenance
 branch. `release.yml` first tests IP discovery/configuration and the updater,
 then builds 14 platform binaries. `release-docker.yml` runs the same tests before
 building amd64/arm64 images. Both check out the release tag or explicit manual
-tag input; the current manual input default is `1.5.3`.
+tag input; the current manual input default is `1.5.4`.
 
 `snapshot.yml` on this maintenance branch is a historical manual repair entry
 that only rebuilds tag `1.5.2`; it does not publish snapshots or newer releases.
-Do not use it for 1.5.3. Normal published-release events trigger the two stable
+Do not use it for 1.5.3 or 1.5.4. Normal published-release events trigger the two stable
 packaging workflows without changing the default branch.
 
 Release-note generation now preserves nonempty authored descriptions. To
 generate notes for an existing release, clear its description first. Agent
 1.5.3's immutable tag predates that preservation change; its authored release
 notes were restored after the release workflow completed.
+
+Maintenance pushes also run the focused IP/config/updater tests with the race detector before publication.
 
 Stable auto-update uses this fork's release list, stays within the current
 major.minor line, and requires the matching platform asset. It runs at startup

@@ -1,0 +1,31 @@
+name: Maintenance Tests
+
+on:
+  push:
+    branches: [maint/1.5.1]
+    paths:
+      - 'cmd/**'
+      - 'monitoring/**'
+      - 'update/**'
+      - 'dnsresolver/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/maintenance-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Test IP discovery, configuration and updater
+        run: go test -race ./monitoring/unit ./cmd/... ./update
+      - name: Vet changed packages
+        run: go vet ./monitoring/unit ./cmd/... ./update
+      - name: Build Agent
+        run: go build ./...
