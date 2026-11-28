@@ -47,3 +47,23 @@ func TestIPLookupURLConfiguration(t *testing.T) {
 		t.Fatal("JSON override or explicit opt-out was ignored")
 	}
 }
+
+func TestThirdPartyFallbackOptOut(t *testing.T) {
+	if got := RootCmd.PersistentFlags().Lookup("disable-third-party-ip-fallback").DefValue; got != "false" {
+		t.Fatal(got)
+	}
+	saved := *flags
+	t.Cleanup(func() { *flags = saved })
+	t.Setenv("AGENT_DISABLE_THIRD_PARTY_IP_FALLBACK", "true")
+	loadFromEnv()
+	if !flags.DisableThirdPartyIPFallback {
+		t.Fatal("environment opt-out ignored")
+	}
+	flags.DisableThirdPartyIPFallback = false
+	if err := json.Unmarshal([]byte(`{"disable_third_party_ip_fallback":true}`), flags); err != nil {
+		t.Fatal(err)
+	}
+	if !flags.DisableThirdPartyIPFallback {
+		t.Fatal("JSON opt-out ignored")
+	}
+}

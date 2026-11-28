@@ -32,7 +32,7 @@ func TestIPDiscovery(t *testing.T) {
 		{name: "legacy keeps private NIC addresses", nic6: "fd00::42", legacy: true, external: true, want4: "10.0.0.42", want6: "fd00::42"},
 		{name: "legacy custom IPv4 wins", nic6: "fd00::42", custom4: "192.0.2.1", legacy: true, external: true, want4: "192.0.2.1", want6: "fd00::42"},
 		{name: "legacy retains early return for one family", legacy: true, external: true, want4: "10.0.0.42"},
-		{name: "lookup failure leaves missing family empty", nic6: "2603:c024::42", external: true, fail: true, want6: "2603:c024::42", calls4: 1},
+		{name: "lookup failure leaves missing family empty", nic6: "2603:c024::42", external: true, fail: true, want6: "2603:c024::42", calls4: 3},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			saved := *flags
@@ -65,7 +65,7 @@ func TestIPDiscovery(t *testing.T) {
 			client := func(host, ip string, calls *int) *http.Client {
 				return &http.Client{Transport: ipLookupTransport(func(r *http.Request) (*http.Response, error) {
 					*calls++
-					if r.Method != "GET" || r.URL.Scheme != "https" || r.URL.Host != host || r.URL.RawQuery != "" || r.URL.Path != "/ip" || r.Body != nil || r.Header.Get("Authorization") != "" {
+					if r.Method != "GET" || r.URL.Scheme != "https" || (!tc.fail && (r.URL.Host != host || r.URL.RawQuery != "" || r.URL.Path != "/ip")) || r.Body != nil || r.Header.Get("Authorization") != "" {
 						t.Fatalf("unexpected lookup request: %v", r.URL)
 					}
 					if tc.fail {

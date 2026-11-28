@@ -1,3 +1,8 @@
+# Privacy and maintenance — development version
+
+- The configured source-IP service is attempted twice, then the matching ipify endpoint (`https://api.ipify.org` or `https://api6.ipify.org`) is tried once. Each request has an eight-second deadline. The third party sees the source IP, timing and fixed User-Agent, but receives no panel token, hostname or hardware data. IPv6 still prefers a local NIC address and explicit custom addresses take priority.
+- Set `--disable-third-party-ip-fallback`, `AGENT_DISABLE_THIRD_PARTY_IP_FALLBACK=true`, or JSON `"disable_third_party_ip_fallback": true` to disable ipify while retaining the two configured-service attempts. Existing `allow_external_ip_lookup=false` still disables all HTTP IP discovery.
+
 # Privacy and maintenance — 1.5.4 (2026-11-28)
 
 Maintenance release: [1.5.4](https://github.com/yinpengfei/komari-agent/releases/tag/1.5.4). [Installation guide](https://github.com/yinpengfei/komari/blob/maint/1.5.1/INSTALL_MAINTENANCE.md). Source and releases use maint/1.5.1; the default branch remains main. Agent and server versions are independent.

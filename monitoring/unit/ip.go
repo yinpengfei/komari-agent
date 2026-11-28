@@ -56,7 +56,7 @@ func GetIPv4Address() (string, error) {
 	if endpoint == "" {
 		endpoint = DefaultIPv4LookupURL
 	}
-	return queryPublicIP(ipv4HTTPClient, endpoint, true)
+	return queryPublicIPWithFallback(ipv4HTTPClient, endpoint, true, !flags.DisableThirdPartyIPFallback)
 }
 
 func GetIPv6Address() (string, error) {
@@ -64,7 +64,7 @@ func GetIPv6Address() (string, error) {
 	if endpoint == "" {
 		endpoint = DefaultIPv6LookupURL
 	}
-	return queryPublicIP(ipv6HTTPClient, endpoint, false)
+	return queryPublicIPWithFallback(ipv6HTTPClient, endpoint, false, !flags.DisableThirdPartyIPFallback)
 }
 
 func GetIPAddress() (ipv4, ipv6 string, err error) {

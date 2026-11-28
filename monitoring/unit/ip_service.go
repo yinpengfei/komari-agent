@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -14,6 +15,38 @@ import (
 
 const DefaultIPv4LookupURL = "https://ipv4.yin.cc/ip"
 const DefaultIPv6LookupURL = "https://ipv6.yin.cc/ip"
+
+// Each attempt has its own eight-second deadline. Validate the configured URL
+// before attempting fallback so an invalid configuration does not leak the IP.
+func queryPublicIPWithFallback(client *http.Client, endpoint string, ipv4, fallback bool) (string, error) {
+	if err := validateIPLookupURL(endpoint); err != nil {
+		return "", err
+	}
+	var err error
+	for attempt := 0; attempt < 2; attempt++ {
+		var ip string
+		ip, err = queryPublicIP(client, endpoint, ipv4)
+		if err == nil {
+			return ip, nil
+		}
+	}
+	if !fallback {
+		return "", err
+	}
+	backup := "https://api6.ipify.org"
+	if ipv4 {
+		backup = "https://api.ipify.org"
+	}
+	if endpoint == backup {
+		return "", err
+	}
+	log.Printf("Configured IPv%d service failed twice; trying ipify fallback", map[bool]int{true: 4, false: 6}[ipv4])
+	ip, fallbackErr := queryPublicIP(client, backup, ipv4)
+	if fallbackErr != nil {
+		return "", fmt.Errorf("configured IP service failed: %v; ipify fallback failed: %v", err, fallbackErr)
+	}
+	return ip, nil
+}
 
 func validateIPLookupURL(raw string) error {
 	u, err := url.Parse(raw)

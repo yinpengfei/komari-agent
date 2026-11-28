@@ -161,6 +161,7 @@ func Execute() {
 
 func init() {
 	RootCmd.PersistentFlags().BoolVar(&flags.AllowExternalIPLookup, "allow-external-ip-lookup", true, "Query configured IP services for missing addresses; IPv6 prefers local NIC")
+	RootCmd.PersistentFlags().BoolVar(&flags.DisableThirdPartyIPFallback, "disable-third-party-ip-fallback", false, "Disable ipify fallback after configured IP service fails")
 	RootCmd.PersistentFlags().StringVar(&flags.IPv4LookupURL, "ipv4-lookup-url", monitoring.DefaultIPv4LookupURL, "Your IPv4 source-IP API URL (HTTPS; JSON ip field or plain IP)")
 	RootCmd.PersistentFlags().StringVar(&flags.IPv6LookupURL, "ipv6-lookup-url", monitoring.DefaultIPv6LookupURL, "Your IPv6 source-IP API URL (HTTPS; JSON ip field or plain IP)")
 	RootCmd.PersistentFlags().StringVarP(&flags.Token, "token", "t", "", "API token")
