@@ -1,11 +1,59 @@
 package monitoring
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 )
+
+func TestIPLookupRetryAndFallback(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		failures  int
+		fallback  bool
+		ipv4      bool
+		wantCalls int
+		wantIP    string
+	}{
+		{"first attempt succeeds", 0, true, true, 1, "8.8.8.8"},
+		{"retry succeeds", 1, true, true, 2, "8.8.8.8"},
+		{"IPv4 fallback succeeds", 2, true, true, 3, "8.8.8.8"},
+		{"IPv6 fallback succeeds", 2, true, false, 3, "2603:c024::99"},
+		{"fallback disabled", 2, false, true, 2, ""},
+		{"all attempts fail", 3, true, true, 3, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			client := &http.Client{Transport: ipLookupTransport(func(r *http.Request) (*http.Response, error) {
+				calls++
+				wantHost := "self.example"
+				if calls == 3 {
+					wantHost = "api6.ipify.org"
+					if tc.ipv4 {
+						wantHost = "api.ipify.org"
+					}
+				}
+				if r.URL.Host != wantHost || r.Header.Get("Authorization") != "" || r.Header.Get("Cookie") != "" || r.Body != nil {
+					t.Fatalf("unexpected request %s", r.URL.Host)
+				}
+				if calls <= tc.failures {
+					return nil, errors.New("unavailable")
+				}
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(tc.wantIP))}, nil
+			})}
+			got, err := queryPublicIPWithFallback(client, "https://self.example/ip", tc.ipv4, tc.fallback)
+			if got != tc.wantIP || calls != tc.wantCalls || (err != nil) != (tc.wantIP == "") {
+				t.Fatalf("got %q, %d calls, error %v", got, calls, err)
+			}
+		})
+	}
+	client := &http.Client{Transport: rejectIPLookup{t}}
+	if _, err := queryPublicIPWithFallback(client, "http://invalid.example", true, true); err == nil {
+		t.Fatal("invalid configured URL must not trigger fallback")
+	}
+}
 
 func TestCommonIPServiceFormats(t *testing.T) {
 	for _, body := range []string{"8.8.8.8\n", `"8.8.8.8"`, `{"ip":"8.8.8.8"}`, `{"IP":"8.8.8.8"}`, `{"query":"8.8.8.8"}`, `{"origin":"8.8.8.8"}`, `{"ip_addr":"8.8.8.8"}`, `{"data":{"ip":"8.8.8.8"}}`, `{"data":"8.8.8.8"}`, `{"ip":"8.8.8.8","ip_version":4,"location":{"city":"test"}}`} {

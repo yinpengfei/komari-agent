@@ -4,7 +4,7 @@
 
 **[安装、升级与维护指南](https://github.com/yinpengfei/komari/blob/maint/1.5.1/INSTALL_MAINTENANCE.md#agent-安装)** · [1.5.4 下载](https://github.com/yinpengfei/komari-agent/releases/tag/1.5.4) · [隐私与更新行为](PRIVACY.md)
 
-默认分支保持 main；请从本维护分支查看维护版文档。1.5.4 默认使用自有轻量接口：IPv4 查询 `https://ipv4.yin.cc/ip`；IPv6 优先读取网卡，缺失才查询 `https://ipv6.yin.cc/ip`。支持自定义 HTTPS URL，原有关闭查询设置继续生效。
+默认分支保持 main；请从本维护分支查看维护版文档。当前开发版默认使用自有轻量接口：IPv4 查询 `https://ipv4.yin.cc/ip`；IPv6 优先读取网卡，缺失才查询 `https://ipv6.yin.cc/ip`。自有接口连续失败两次后使用 ipify 兜底，可单独关闭；原有关闭查询设置继续生效。
 
 # komari-agent
 
@@ -71,6 +71,7 @@ export AGENT_TOKEN="your-token"
 | `ipv4_lookup_url` | `AGENT_IPV4_LOOKUP_URL` | `--ipv4-lookup-url` | IPv4 查询 URL；默认 https://ipv4.yin.cc/ip | 本 Fork 1.5.4 |
 | `ipv6_lookup_url` | `AGENT_IPV6_LOOKUP_URL` | `--ipv6-lookup-url` | IPv6 查询 URL；默认 https://ipv6.yin.cc/ip | 本 Fork 1.5.4 |
 | `allow_external_ip_lookup` | `AGENT_ALLOW_EXTERNAL_IP_LOOKUP` | `--allow-external-ip-lookup` | 允许缺失地址通过配置的 HTTPS 接口补齐；默认开启；设为 false 禁止全部 HTTP 地址查询 | 本 Fork 1.5.2 |
+| `disable_third_party_ip_fallback` | `AGENT_DISABLE_THIRD_PARTY_IP_FALLBACK` | `--disable-third-party-ip-fallback` | 关闭 ipify 兜底；自有接口仍重试 | 开发版 |
 
 完整参数可运行：
 
@@ -79,6 +80,12 @@ export AGENT_TOKEN="your-token"
 ```
 
 详见 `cmd/flags/flag.go` 及 `cmd/root.go`
+
+## 开发版：查询重试与第三方兜底
+
+每种缺失的地址先请求对应的配置接口，失败立即重试一次；两次均失败后，IPv4 请求 `https://api.ipify.org`，IPv6 请求 `https://api6.ipify.org`，每次请求最多 8 秒，所有接口失败后该地址留空并在下次更新再试。IPv4/IPv6 并行查询，最坏情况可能延迟本次基础信息上报约 24 秒。成功即停止，不查询后续服务。原有手动地址、IPv6 网卡优先和禁止全部 HTTP 查询规则不变。
+
+第三方服务可看到节点公网出口 IP、请求时间和固定 User-Agent；请求不携带面板 Token、主机名或硬件信息，也不使用代理。设置 `--disable-third-party-ip-fallback`、环境变量 `AGENT_DISABLE_THIRD_PARTY_IP_FALLBACK=true` 或 JSON `"disable_third_party_ip_fallback": true` 可只禁用第三方兜底。已有 `--allow-external-ip-lookup=false` 仍禁止全部 HTTP 查询。以下 1.5.4 内容为该已发布版本的历史说明。
 
 ## 1.5.4 的 IP 获取规则
 
